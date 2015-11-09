@@ -13,7 +13,7 @@ It contains a number of methods that can be called:
 import json
 
 class Rule(object):
-    def __init__(self, rtype, rdur, runit, rfol=None):
+    def __init__(self, rtype, rdur, runit, rfol=None, **kwargs):
         '''Create Notification object.
 
         One Rule object at a time, 3 required, one optional arg:
@@ -35,6 +35,9 @@ class Rule(object):
             fields.append('followup')
 
         self.output = dict(zip(fields, [self.type, self.dur, self.unit, self.followup]))
+
+        # read-only attribute
+        self.id = kwargs.get('id', None)
 
     def __str__(self):
         return json.dumps(self.output)
@@ -62,14 +65,16 @@ class Monitor(object):
         use add_rule or add_notif to add additional.
         """
         self.name = name
-        self.notifications = []
+        self.notifications = {}
         self.rules = []
-        if kwargs.get("notification", None) is not None:
-            self.notifications = [Notification(kwargs.get("notification"))]
-        if kwargs.get("rule", None) is not None:
-            self.rules = [Rule(kwargs.get("rule"))]
         self.note = kwargs.get("note", "")
 
+        # read-only attributes
+        self.code = kwargs.get('code', None)
+        self.is_paused = kwargs.get('is_paused', None)
+        self.is_passing = kwargs.get('is_passing', None)
+        self.initialized = kwargs.get('initialized', None)
+        self.created = kwargs.get('created', None)
 
     def add_rule(self, rtype, rdur, runit, rfol):
         self.rules.append(Rule(rtype, rdur, runit, rfol))
