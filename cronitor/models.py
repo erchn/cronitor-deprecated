@@ -25,36 +25,88 @@ class Rule(object):
         More details are available here: 
           https://cronitor.io/help/monitor-api
         '''
+        self.id = None
         self.type = rtype
         self.dur = rdur
         self.unit = runit
         self.followup = rfol
 
-        fields = ['rule_type', 'duration', 'time_unit']
-        if self.followup is not None:
-            fields.append('followup')
-
-        self.output = dict(zip(fields, [self.type, self.dur, self.unit, self.followup]))
-
         # read-only attribute
         self.id = kwargs.get('id', None)
 
+        fields = ['rule_type', 'duration', 'time_unit']
+        values = [self.type, self.dur, self.unit]
+
+        if self.followup is not None:
+            fields.append('hours_to_followup_alert')
+            values.append(self.followup)
+
+        # setup rule dictionary
+        self.obj = dict(zip(fields, [self.type, self.dur, self.unit, self.followup]))
+        if self.id is not None:
+            self.obj = {self.id: self.obj}
+
     def __str__(self):
-        return json.dumps(self.output)
+        return json.dumps(self.obj)
 
-class Notification(object):
-    def __init__(self, ntype, ndests):
-        '''Create Notification object.
+    def dict(self):
+        return self.obj
 
-        One Notification type at a time, with an array of values
+class Notifications(object):
+    def __init__(self):
+        '''Create Notifications object.'''
+        self.emails = []
+        self.slack = []
+        self.pagerduty = []
+        self.phones = []
+        self.webhooks = []
+        self.types = ['emails', 'slack', 'pagerduty', 'phones', 'webhooks']
+
+    def fromobj(self, jsonstr, update=False):
+        '''Replace or update values in Notifications object with data from json object'''
+        dct = json.loads(jsonstr)
+        if update:
+            self.update(**dct)
+        else:
+            self.replace(**dct)
+
+    def update(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[]):
+        '''Update Notifications object. Keeping existing data.
+
+        Expects kwarg passed in for the notification type to update
+        each type passed in should contain a list of values to update.
+            
+
         Types are available here: 
-          https://cronitor.io/help/monitor-api
+            https://cronitor.io/help/monitor-api
         '''
-        self.type = ntype
-        self.dests = ndests
+        for method in self.types:
+            current = getattr(self, method)
+            value = locals().get(method)
+            if value:
+                updated = list(set(current).update(set(value)))
+                setattr(self, method, updated)
+
+    def replace(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[]):
+        '''Replace values in Notifications object. Remove existing data.
+        Expects kwarg passed in for the notification type to replace
+        each type passed in should contain a list of values to replace.
+
+        Types are available here: 
+            https://cronitor.io/help/monitor-api
+        '''
+        self.emails = emails
+        self.slack = slack
+        self.pagerduty = pagerduty
+        self.phones = phones
+        self.webhooks = webhooks
 
     def __str__(self):
-        return json.dumps({self.type: self.dests})
+        dct = {}
+        for method in self.types:
+            dct[method] = getattr(self, method)
+
+        return json.dumps({"notifications": dct})
 
 class Monitor(object):
     def __init__(self, name, **kwargs):
