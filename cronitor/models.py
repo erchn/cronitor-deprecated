@@ -62,7 +62,7 @@ class Notifications(object):
         self.webhooks = []
         self.types = ['emails', 'slack', 'pagerduty', 'phones', 'webhooks']
 
-    def fromobj(self, jsonstr, update=False):
+    def fromjson(self, jsonstr, update=False):
         '''Replace or update values in Notifications object with data from json object'''
         dct = json.loads(jsonstr)
         if update:
@@ -84,8 +84,26 @@ class Notifications(object):
             current = getattr(self, method)
             value = locals().get(method)
             if value:
-                updated = list(set(current).update(set(value)))
+                updated = list(set(current) | set(value)))
                 setattr(self, method, updated)
+
+    def remove(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[]):
+        '''Update Notifications object. Removing items from existing object.
+
+        Expects kwarg passed in for the notification type to update
+        each type passed in should contain a list of values to remove.
+            
+
+        Types are available here: 
+            https://cronitor.io/help/monitor-api
+        '''
+        for method in self.types:
+            current = getattr(self, method)
+            value = locals().get(method)
+            if value:
+                updated = list(set(current) - set(value)))
+                setattr(self, method, updated)
+
 
     def replace(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[]):
         '''Replace values in Notifications object. Remove existing data.
