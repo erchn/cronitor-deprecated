@@ -1,13 +1,5 @@
 """This class defines a cronitor Monitor object.
 
-It contains a number of methods that can be called:
-
-  - create # create the monitor at the Cronitor site
-  - delete # delete the monitor ...
-  - update # update the monitor ...
-  - run # mark the monitor as just started
-  - complete # mark successful finish of monitor
-  - fail # mark failure at Cronitor for this monitor
 """
 
 import json
@@ -48,8 +40,9 @@ class Rule(object):
     def __str__(self):
         return json.dumps(self.obj)
 
-    def dict(self):
-        return self.obj
+    def __iter__(self):
+        for x, y in self.obj.items():
+            yield x, y
 
 class Notifications(object):
     def __init__(self):
@@ -69,8 +62,23 @@ class Notifications(object):
         else:
             self.replace(**dct)
 
-    def update(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[]):
-        '''Update Notifications object. Keeping existing data.
+    def _update(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[], remove=False):
+        '''Update Notifications object, internal, used to add or remove data from object
+        based on `remove` kwargs.
+        '''
+
+        for method in self.types:
+            current = getattr(self, method)
+            value = locals().get(method)
+            if value:
+                if remove:
+                    updated = list(set(current) - set(value))
+                else:
+                    updated = list(set(current) | set(value))
+                setattr(self, method, updated)
+
+    def addto(self, **kwargs):
+        '''Update Notifications object, adding to existing data.
 
         Expects kwarg passed in for the notification type to update
         each type passed in should contain a list of values to update.
@@ -79,30 +87,14 @@ class Notifications(object):
         Types are available here: 
             https://cronitor.io/help/monitor-api
         '''
-        for method in self.types:
-            current = getattr(self, method)
-            value = locals().get(method)
-            if value:
-                updated = list(set(current) | set(value)))
-                setattr(self, method, updated)
 
-    def remove(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[]):
-        '''Update Notifications object. Removing items from existing object.
+        self._update(**kwargs)
 
-        Expects kwarg passed in for the notification type to update
-        each type passed in should contain a list of values to remove.
-            
-
-        Types are available here: 
-            https://cronitor.io/help/monitor-api
+    def removefrom(self, **kwargs):
+        '''Update Notifications object, removing from existing data.
+        The inverse of `update` method
         '''
-        for method in self.types:
-            current = getattr(self, method)
-            value = locals().get(method)
-            if value:
-                updated = list(set(current) - set(value)))
-                setattr(self, method, updated)
-
+        self._update(remove=True, **kwargs)
 
     def replace(self, emails=[], slack=[], pagerduty=[], phones=[], webhooks=[]):
         '''Replace values in Notifications object. Remove existing data.
@@ -122,8 +114,11 @@ class Notifications(object):
         dct = {}
         for method in self.types:
             dct[method] = getattr(self, method)
-
         return json.dumps({"notifications": dct})
+
+    def __iter__(self):
+        for method in self.types:
+            yield method, getattr(self, method)
 
 class Monitor(object):
     def __init__(self, name, **kwargs):
@@ -146,7 +141,7 @@ class Monitor(object):
         self.created = kwargs.get('created', None)
 
     def add_rule(self, rtype, rdur, runit, rfol):
-        self.rules.append(Rule(rtype, rdur, runit, rfol))
+        pass
 
     def add_notif(self, ntype, ndests):
-        self.notifications.append(Notification(ntype, ndests))
+        pass
