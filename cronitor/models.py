@@ -13,7 +13,7 @@ It contains a number of methods that can be called:
 import json
 
 class Rule(object):
-    def __init__(self, rtype, rdur, runit, rfol=None, **kwargs):
+    def __init__(self, rule_type, rule_duration, time_unit, hours_to_followup_alert=None, **kwargs):
         '''Create Notification object.
 
         One Rule object at a time, 3 required, one optional arg:
@@ -25,11 +25,10 @@ class Rule(object):
         More details are available here: 
           https://cronitor.io/help/monitor-api
         '''
-        self.id = None
-        self.type = rtype
-        self.dur = rdur
-        self.unit = runit
-        self.followup = rfol
+        self.type = rule_type
+        self.dur = rule_duration
+        self.unit = time_unit
+        self.followup = hours_to_followup_alert
 
         # read-only attribute
         self.id = kwargs.get('id', None)
@@ -113,11 +112,11 @@ class Notifications(object):
         Types are available here: 
             https://cronitor.io/help/monitor-api
         '''
-        self.emails = emails
-        self.slack = slack
-        self.pagerduty = pagerduty
-        self.phones = phones
-        self.webhooks = webhooks
+        if emails: self.emails = emails
+        if slack: self.slack = slack
+        if pagerduty: self.pagerduty = pagerduty
+        if phones: self.phones = phones
+        if webhooks: self.webhooks = webhooks
 
     def __str__(self):
         dct = {}
